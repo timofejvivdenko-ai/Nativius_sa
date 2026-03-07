@@ -2,32 +2,35 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Nevitius - Official 2011 Edition</title>
+    <title>Nevitius - 2011 Master Edition</title>
     <style>
         body { background: #E1E1E1 url('https://web.archive.org'); font-family: Verdana, Arial; margin: 0; }
         header { background: #003399; color: white; padding: 0 20px; display: flex; align-items: center; border-bottom: 3px solid #002266; height: 55px; position: sticky; top: 0; z-index: 100; }
+        #announcement-bar { background: #FF4444; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 13px; display: none; border-bottom: 2px solid #880000; }
         .search-container { flex-grow: 1; display: flex; justify-content: center; }
         #search-bar { width: 400px; padding: 7px; border-radius: 3px; border: 1px solid #001a4d; outline: none; }
-        .container { width: 1400px; margin: 15px auto; background: white; border: 1px solid #999; display: flex; min-height: 900px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        .container { width: 1400px; margin: 15px auto; background: rgba(255,255,255,0.95); border: 1px solid #999; display: flex; min-height: 900px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
         .sidebar { width: 230px; border-right: 1px solid #CCC; padding: 15px; background: #F8F8F8; }
         .sidebar a { display: block; padding: 12px; color: #333; text-decoration: none; border-bottom: 1px solid #EEE; font-size: 13px; font-weight: bold; cursor: pointer; }
         .sidebar a:hover { background: #EEE; color: #003399; }
         .main { flex-grow: 1; padding: 40px; }
-        .btn { background: linear-gradient(#00FF00, #008800); color: white; border: 1px solid #006600; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 3px; border: 1px solid #006600; }
+        .btn { background: linear-gradient(#00FF00, #008800); color: white; border: 1px solid #006600; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 3px; }
         .btn-red { background: linear-gradient(#FF4444, #CC0000); border: 1px solid #990000; }
-        .bc-badge { background: #FFD700; color: #000; padding: 2px 6px; font-size: 11px; border-radius: 3px; margin-left: 8px; font-weight: bold; border: 1px solid #B8860B; }
         .download-btn { background: linear-gradient(#FFD700, #B8860B); color: black; padding: 8px 15px; text-decoration: none; font-weight: bold; border-radius: 3px; font-size: 12px; margin-right: 20px; border: 1px solid #8B4513; }
         .card { display: inline-block; width: 220px; border: 1px solid #CCC; padding: 12px; margin: 10px; text-align: center; background: white; vertical-align: top; position: relative; }
         .card img { width: 200px; height: 200px; object-fit: cover; border: 1px solid #EEE; }
         input, select, textarea { padding: 10px; margin: 8px 0; width: 90%; border: 1px solid #999; font-family: Verdana; }
-        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #003399; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #003399; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .bc-badge { background: #FFD700; color: #000; padding: 2px 6px; font-size: 11px; border-radius: 3px; margin-left: 8px; font-weight: bold; border: 1px solid #B8860B; }
     </style>
 </head>
-<body>
+<body id="site-body">
+
+<div id="announcement-bar"></div>
 
 <div id="auth-screen">
     <div style="background:white; padding:40px; border:6px solid #002266; text-align:center; width:450px;">
-        <h1 style="font-size:55px; letter-spacing:-4px; margin:0 0 20px 0;">NEVITIUS</h1>
+        <h1 style="font-size:55px; letter-spacing:-4px; margin:0 0 20px 0; color:black;">NEVITIUS</h1>
         <input type="text" id="reg-u" placeholder="Username">
         <input type="email" id="reg-e" placeholder="Email">
         <input type="password" id="reg-p" placeholder="Password"><br><br>
@@ -44,7 +47,7 @@
 </header>
 
 <div class="container">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <a onclick="showPage('home')">Games</a>
         <a onclick="showPage('catalog')">Catalog</a>
         <a onclick="showPage('creations')">Creations</a>
@@ -52,7 +55,6 @@
         <a onclick="showPage('groups')">Groups</a>
         <a onclick="showPage('inventory')">Inventory</a>
         <a onclick="showPage('settings')">Settings</a>
-        <a id="admin-link" style="color:red; display:none; border:1px dashed red; margin-top:20px;" onclick="showPage('admin')">ADMIN PANEL</a>
     </div>
     <div class="main" id="content"></div>
 </div>
@@ -61,23 +63,30 @@
     const ADMIN_EMAIL = "T.vivdenko@outlook.com";
     const BC_CODE = "NEVITIUS_GOLD_2026";
 
-    let db = JSON.parse(localStorage.getItem('nevitius_v11')) || {
-        users: [], catalog: [], places: [], groups: [], bans: []
+    let db = JSON.parse(localStorage.getItem('nev_v17_db')) || { 
+        users: [], catalog: [], places: [], groups: [], bans: [], alert: "" 
     };
-    let session = JSON.parse(localStorage.getItem('nev_sess_v11'));
+    let session = JSON.parse(localStorage.getItem('nev_v17_sess'));
 
     function save() { 
-        localStorage.setItem('nevitius_v11', JSON.stringify(db)); 
-        localStorage.setItem('nev_sess_v11', JSON.stringify(session)); 
+        localStorage.setItem('nev_v17_db', JSON.stringify(db)); 
+        localStorage.setItem('nev_v17_sess', JSON.stringify(session)); 
     }
 
     function auth() {
-        const u = document.getElementById('reg-u').value, e = document.getElementById('reg-e').value;
-        if(!u || !e) return alert("Fill fields!");
+        const u = document.getElementById('reg-u').value, e = document.getElementById('reg-e').value, p = document.getElementById('reg-p').value;
+        if(!u || !e || !p) return alert("Fill all fields!");
         if(db.bans.includes(e)) return alert("BANNED");
-        let user = db.users.find(x => x.email === e) || { username: u, email: e, tix: 100, inv: [], friends: [], bc: false, bday: "2011-01-01", role: (e === ADMIN_EMAIL ? 'admin' : 'user') };
-        if(!db.users.find(x => x.email === e)) db.users.push(user);
-        session = user; save(); location.reload();
+
+        let existingUser = db.users.find(x => x.email === e);
+        if(existingUser) {
+            if(existingUser.password === p) { session = existingUser; } 
+            else { return alert("WRONG PASSWORD!"); }
+        } else {
+            let newUser = { username: u, email: e, password: p, tix: 100, inv: [], friends: [], bc: false, bday: "2011-01-01", role: (e === ADMIN_EMAIL ? 'admin' : 'user'), bg: "" };
+            db.users.push(newUser); session = newUser;
+        }
+        save(); location.reload();
     }
 
     async function toB64(input) { 
@@ -91,61 +100,88 @@
             c.innerHTML = `<h1>Games</h1>` + db.places.map(p => `<div class="card"><img src="${p.img}"><b>${p.title}</b><br><small>By ${p.author}</small><br><br><button class="btn" onclick="window.open('${p.url}')">Play</button></div>`).join('');
         }
         else if(page === 'admin') {
-            c.innerHTML = `<h1>Nevitius Master Admin</h1>
+            c.innerHTML = `<h1>Admin Master Panel</h1>
             <div style="border:3px solid red; padding:20px; background:#FFF5F5;">
-                <h3>Catalog Management</h3>
-                <input id="iN" placeholder="Item Name">
-                <input id="iP" placeholder="Price (T$)">
-                Icon: <input type="file" id="iI" accept="image/*"><br>
-                Limited? <input type="checkbox" id="iL" style="width:20px;">
-                <button class="btn" onclick="addCatalog()">Upload Item</button>
+                <h3>Announcement (Global Alert)</h3>
+                <input id="alertMsg" placeholder="Type announcement here..." value="${db.alert}">
+                <button class="btn" style="background:red" onclick="setAlert()">Post Announcement</button>
+                <button class="btn" style="background:gray" onclick="clearAlert()">Clear</button>
                 <hr>
-                <h3>Economy & Moderation</h3>
-                <input id="mE" placeholder="Target User Email"><br>
-                <input id="mA" placeholder="Tickets Amount"><br>
-                <button class="btn" style="background:blue" onclick="giveTickets()">Give Tickets</button>
-                <button class="btn btn-red" onclick="banUser()">Ban User</button>
+                <h3>Add to Catalog</h3>
+                <input id="iN" placeholder="Item Name"><input id="iP" placeholder="Price (T$)"><br>
+                Icon: <input type="file" id="iI"><br>Limited? <input type="checkbox" id="iL" style="width:20px;"><br>
+                <button class="btn" onclick="addCatalog()">Upload</button><hr>
+                <h3>Economy & Bans</h3>
+                <input id="mE" placeholder="Target Email"><input id="mA" placeholder="Tickets"><br>
+                <button class="btn" onclick="giveTickets()">Give T$</button>
+                <button class="btn btn-red" onclick="banUser()">Ban Player</button>
             </div>`;
         }
+        else if(page === 'settings') {
+            c.innerHTML = `<h1>Settings</h1>
+                <b>Birthdate:</b> <input type="date" id="sB" value="${session.bday}"><br>
+                <b>Builders Club:</b> ${session.bc ? 'ACTIVE' : '<input id="bcC" placeholder="Code"><button class="btn" onclick="actBC()">Act</button>'}
+                <hr>
+                <h3>Background</h3>
+                <input type="color" id="bgColor"> <input type="file" id="bgImg" accept="image/*">
+                <br><br><button class="btn" style="background:blue" onclick="applySettings()">Save Settings</button>
+                <hr><button class="btn" style="background:red;" onclick="logout()">LOG OUT</button>`;
+        }
         else if(page === 'friends') {
-            c.innerHTML = `<h1>Friends</h1><input id="fN" placeholder="Username"><button class="btn" onclick="addF()">Add Friend</button><ul>${session.friends.map(f => `<li>${f}</li>`).join('')}</ul>`;
+            c.innerHTML = `<h1>Friends</h1><input id="fN" placeholder="Username"><button class="btn" onclick="addF()">Add</button><ul>${session.friends.map(f => `<li>${f}</li>`).join('')}</ul>`;
         }
         else if(page === 'catalog') {
             c.innerHTML = `<h1>Catalog</h1>` + db.catalog.map((i, idx) => `<div class="card"><img src="${i.img}"><b>${i.name}</b><br>T$ ${i.price}<br><br><button class="btn" onclick="buy(${idx})">Buy</button></div>`).join('');
         }
-        else if(page === 'groups') {
-            c.innerHTML = `<h1>Groups</h1><div style="background:#EEE;padding:20px;"><h3>Create (50 T$)</h3><input id="gN" placeholder="Name"><textarea id="gD" placeholder="Desc"></textarea><input type="file" id="gL"><button class="btn" onclick="addG()">Create</button></div>
-                ${db.groups.map(g => `<div style="display:flex;margin-top:10px;border:1px solid #CCC;padding:10px;"><img src="${g.logo}" style="width:80px;height:80px;margin-right:15px;"><div><b>${g.name}</b><br>${g.desc}</div></div>`).join('')}`;
-        }
         else if(page === 'creations') {
-            c.innerHTML = `<h1>Develop</h1><div style="background:#EEE;padding:20px;"><h3>Publish URL</h3><input id="pT" placeholder="Title"><input id="pU" placeholder="Game Link"><input type="file" id="pI"><button class="btn" onclick="addP()">Publish</button></div>`;
+            c.innerHTML = `<h1>Develop</h1><input id="pT" placeholder="Title"><input id="pU" placeholder="URL"><input type="file" id="pI"><button class="btn" onclick="addPlace()">Publish</button>`;
         }
         else if(page === 'inventory') {
             c.innerHTML = `<h1>Inventory</h1>` + session.inv.map(i => `<div class="card"><img src="${i.img}"><b>${i.name}</b></div>`).join('');
         }
-        else if(page === 'settings') {
-            c.innerHTML = `<h1>Settings</h1><b>Birth Date:</b> <input type="date" id="sB" value="${session.bday}"><br><br>
-                <b>Builders Club:</b> ${session.bc ? '<span class="bc-badge">ACTIVE</span>' : '<input id="bcC" placeholder="Code"><button class="btn" onclick="actBC()">Activate</button>'}
-                <br><br><button class="btn" onclick="saveSet()">Save</button>`;
+    }
+
+    function setAlert() { db.alert = document.getElementById('alertMsg').value; save(); location.reload(); }
+    function clearAlert() { db.alert = ""; save(); location.reload(); }
+
+    async function applySettings() {
+        session.bday = document.getElementById('sB').value;
+        const color = document.getElementById('bgColor').value;
+        const file = document.getElementById('bgImg');
+        if(file.files[0]) { session.bg = await toB64(file); } else { session.bg = color; }
+        save(); location.reload();
+    }
+
+    function loadTheme() {
+        if(db.alert) { const b = document.getElementById('announcement-bar'); b.innerText = db.alert; b.style.display = "block"; }
+        if(session && session.bg) {
+            const b = document.getElementById('site-body');
+            if(session.bg.startsWith('data:image')) { b.style.background = `url(${session.bg}) center center fixed`; b.style.backgroundSize = "cover"; }
+            else { b.style.background = session.bg; }
         }
     }
 
-    async function addP() { const img = await toB64(document.getElementById('pI')); db.places.push({title:document.getElementById('pT').value, url:document.getElementById('pU').value, img:img, author:session.username}); save(); showPage('home'); }
-    async function addCatalog() { const img = await toB64(document.getElementById('iI')); db.catalog.push({name:document.getElementById('iN').value, price:parseInt(document.getElementById('iP').value), img:img, limited:document.getElementById('iL').checked}); save(); alert("Item added!"); showPage('catalog'); }
-    async function addG() { if(session.tix < 50) return alert("No T$!"); const logo = await toB64(document.getElementById('gL')); db.groups.push({name:document.getElementById('gN').value, desc:document.getElementById('gD').value, logo:logo, owner:session.username}); session.tix -= 50; save(); showPage('groups'); }
-    function addF() { session.friends.push(document.getElementById('fN').value); save(); showPage('friends'); }
+    function logout() { localStorage.removeItem('nev_v17_sess'); location.reload(); }
+    async function addCatalog() { const img = await toB64(document.getElementById('iI')); db.catalog.push({name:document.getElementById('iN').value, price:parseInt(document.getElementById('iP').value), img:img, limited:document.getElementById('iL').checked}); save(); alert("Added!"); showPage('catalog'); }
+    async function addPlace() { const img = await toB64(document.getElementById('pI')); db.places.push({title:document.getElementById('pT').value, url:document.getElementById('pU').value, img:img, author:session.username}); save(); showPage('home'); }
     function buy(idx) { const i = db.catalog[idx]; if(session.tix >= i.price) { session.tix -= i.price; session.inv.push({...i}); save(); location.reload(); } }
     function actBC() { if(document.getElementById('bcC').value === BC_CODE) { session.bc=true; save(); location.reload(); } }
-    function saveSet() { session.bday = document.getElementById('sB').value; save(); alert("Saved!"); }
-    function giveTickets() { let u = db.users.find(x => x.email === document.getElementById('mE').value); if(u) { u.tix += parseInt(document.getElementById('mA').value); save(); alert("Tickets Sent!"); } }
-    function banUser() { db.bans.push(document.getElementById('mE').value); save(); alert("User Banned!"); }
+    function addF() { session.friends.push(document.getElementById('fN').value); save(); showPage('friends'); }
+    function giveTickets() { let u = db.users.find(x => x.email === document.getElementById('mE').value); if(u) { u.tix += parseInt(document.getElementById('mA').value); save(); alert("Sent!"); } }
+    function banUser() { db.bans.push(document.getElementById('mE').value); save(); alert("Banned!"); }
     function search() { const q = document.getElementById('search-bar').value.toLowerCase(); showPage('home'); }
 
     if(session) {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('u-disp').innerHTML = session.username + (session.bc ? ' <span class="bc-badge">BC</span>' : '');
         document.getElementById('tix-disp').innerText = "T$ " + session.tix;
-        if(session.role === 'admin') document.getElementById('admin-link').style.display = 'block';
+        loadTheme();
+        if(session.role === 'admin') {
+            const side = document.getElementById('sidebar');
+            const admBtn = document.createElement('a');
+            admBtn.innerHTML = "ADMIN PANEL"; admBtn.style.color = "red"; admBtn.style.border = "2px dashed red"; admBtn.style.marginTop = "20px";
+            admBtn.onclick = () => showPage('admin'); side.appendChild(admBtn);
+        }
         showPage('home');
     }
 </script>
