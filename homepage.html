@@ -41,10 +41,7 @@
 <header>
     <div style="font-size:28px; font-weight:bold; cursor:pointer;" onclick="showPage('home')">NEVITIUS</div>
     <div class="search-container"><input type="text" id="search-bar" placeholder="Search Games..." onkeyup="search()"></div>
-    
-    <!-- ТВОЄ НОВЕ ПОСИЛАННЯ -->
-    <a href="https://drive.usercontent.google.com/u/0/uc?id=15NetVuf40umw7H-Vop_7NnBUAOUOi5H2&export=download" class="download-btn">Download App</a>
-
+    <a href="https://drive.usercontent.com" class="download-btn">Download App</a>
     <div id="u-disp" style="font-weight:bold; font-size:14px;"></div>
     <div style="margin-left:20px; color:#E6B800; font-weight:bold; font-size:18px;" id="tix-disp">T$ 0</div>
 </header>
@@ -64,10 +61,9 @@
 
 <script>
     const ADMIN_EMAIL = "T.vivdenko@outlook.com";
-    const BC_CODE = "NEVITIUS_GOLD_2026";
 
     let db = JSON.parse(localStorage.getItem('nev_v18_db')) || { 
-        users: [], catalog: [], places: [], groups: [], bans: [], alert: "" 
+        users: [], catalog: [], places: [], groups: [], bans: [], alert: "", bcCode: "NEVITIUS_2026" 
     };
     let session = JSON.parse(localStorage.getItem('nev_v18_sess'));
 
@@ -76,25 +72,40 @@
         localStorage.setItem('nev_v18_sess', JSON.stringify(session)); 
     }
 
+    function checkHourlyBonus() {
+        if (!session) return;
+        const now = Date.now();
+        if (!session.lastBonus) { session.lastBonus = now; save(); return; }
+        if (now - session.lastBonus >= 3600000) {
+            let hours = Math.floor((now - session.lastBonus) / 3600000);
+            session.tix += hours * 5;
+            session.lastBonus = now;
+            let u = db.users.find(x => x.email === session.email);
+            if(u) { u.tix = session.tix; u.lastBonus = now; }
+            save();
+            document.getElementById('tix-disp').innerText = "T$ " + session.tix;
+            alert("Бонус: +" + (hours * 5) + " T$!");
+        }
+    }
+
     function auth() {
         const u = document.getElementById('reg-u').value, e = document.getElementById('reg-e').value, p = document.getElementById('reg-p').value;
         if(!u || !e || !p) return alert("Fill all fields!");
         if(db.bans.includes(e)) return alert("BANNED");
-
         let existingUser = db.users.find(x => x.email === e);
         if(existingUser) {
             if(existingUser.password === p) { session = existingUser; } 
             else { return alert("WRONG PASSWORD!"); }
         } else {
-            let newUser = { username: u, email: e, password: p, tix: 100, inv: [], friends: [], bc: false, bday: "2011-01-01", role: (e === ADMIN_EMAIL ? 'admin' : 'user'), bg: "" };
+            let newUser = { username: u, email: e, password: p, tix: 100, inv: [], friends: [], bc: false, bday: "2011-01-01", role: (e === ADMIN_EMAIL ? 'admin' : 'user'), bg: "", lastBonus: Date.now() };
             db.users.push(newUser); session = newUser;
         }
         save(); location.reload();
     }
 
     async function toB64(input) { 
-        if(!input || !input.files[0]) return "";
-        return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(input.files[0]); }); 
+        if(!input || !input.files) return "";
+        return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(input.files); }); 
     }
 
     function showPage(page) {
@@ -102,92 +113,124 @@
         if(page === 'home') {
             c.innerHTML = `<h1>Games</h1>` + (db.places.length ? db.places.map(p => `<div class="card"><img src="${p.img}"><b>${p.title}</b><br><small>By ${p.author}</small><br><br><button class="btn" onclick="window.open('${p.url}')">Play</button></div>`).join('') : "<p>No games published yet.</p>");
         }
-        else if(page === 'admin') {
-            c.innerHTML = `<h1>Admin Master Panel</h1>
-            <div style="border:3px solid red; padding:20px; background:#FFF5F5;">
-                <h3>Announcement Bar</h3>
-                <input id="alertMsg" placeholder="Type text here..." value="${db.alert}">
-                <button class="btn" style="background:red" onclick="setAlert()">Update Alert</button>
-                <button class="btn" style="background:gray" onclick="clearAlert()">Clear</button>
-                <hr>
-                <h3>Catalog Creator</h3>
-                <input id="iN" placeholder="Item Name"><input id="iP" placeholder="Price (T$)"><br>
-                Icon: <input type="file" id="iI"><br>Limited? <input type="checkbox" id="iL" style="width:20px;"><br>
-                <button class="btn" onclick="addCatalog()">Add to Catalog</button><hr>
-                <h3>User Management</h3>
-                <input id="mE" placeholder="Target Email"><input id="mA" placeholder="Tickets"><br>
-                <button class="btn" onclick="giveTickets()">Give T$</button>
-                <button class="btn btn-red" onclick="banUser()">Ban Player</button>
-            </div>`;
-        }
-        else if(page === 'settings') {
-            c.innerHTML = `<h1>Settings</h1>
-                <b>Birthdate:</b> <input type="date" id="sB" value="${session.bday}"><br>
-                <b>Builders Club:</b> ${session.bc ? 'ACTIVE' : '<input id="bcC" placeholder="Code"><button class="btn" onclick="actBC()">Act</button>'}
-                <hr>
-                <h3>Customize Background</h3>
-                <input type="color" id="bgColor"> <input type="file" id="bgImg" accept="image/*">
-                <br><br><button class="btn" style="background:blue" onclick="applySettings()">Save & Reload</button>
-                <hr><button class="btn" style="background:linear-gradient(#FF4444, #880000);" onclick="logout()">LOG OUT</button>`;
-        }
         else if(page === 'catalog') {
-            c.innerHTML = `<h1>Catalog</h1>` + (db.catalog.length ? db.catalog.map((i, idx) => `<div class="card"><img src="${i.img}"><b>${i.name}</b><br>T$ ${i.price}<br><br><button class="btn" onclick="buy(${idx})">Buy</button></div>`).join('') : "<p>Catalog is empty.</p>");
-        }
-        else if(page === 'friends') {
-            c.innerHTML = `<h1>Friends</h1><input id="fN" placeholder="Username"><button class="btn" onclick="addF()">Add Friend</button><ul>${session.friends.map(f => `<li>${f}</li>`).join('')}</ul>`;
+            c.innerHTML = `<h1>Catalog</h1>` + (db.catalog.length ? db.catalog.map(i => `<div class="card"><img src="${i.img}"><b>${i.name}</b><br>Price: ${i.price} T$<br><button class="btn" onclick="buyItem(${i.id})">Buy</button></div>`).join('') : "<p>Catalog is empty.</p>");
         }
         else if(page === 'creations') {
-            c.innerHTML = `<h1>Develop</h1><input id="pT" placeholder="Title"><input id="pU" placeholder="Game URL Link"><input type="file" id="pI"><button class="btn" onclick="addPlace()">Publish</button>`;
+            c.innerHTML = `<h1>Creations</h1><h3>Create Game</h3><input id="pT" placeholder="Game Title"><br><input id="pU" placeholder="Game URL"><br>Icon: <input type="file" id="pI"><br><button class="btn" onclick="addPlace()">Publish Game</button>`;
+        }
+        else if(page === 'friends') {
+            c.innerHTML = `<h1>Friends</h1><p>Search for users:</p><input id="fS" placeholder="Username"><button class="btn">Search</button>`;
+        }
+        else if(page === 'groups') {
+            c.innerHTML = `<h1>Groups</h1><input id="gN" placeholder="Group Name"><button class="btn">Create (50 T$)</button>`;
         }
         else if(page === 'inventory') {
             c.innerHTML = `<h1>Inventory</h1>` + (session.inv.length ? session.inv.map(i => `<div class="card"><img src="${i.img}"><b>${i.name}</b></div>`).join('') : "<p>Empty.</p>");
         }
-    }
-
-    function setAlert() { db.alert = document.getElementById('alertMsg').value; save(); location.reload(); }
-    function clearAlert() { db.alert = ""; save(); location.reload(); }
-
-    async function applySettings() {
-        session.bday = document.getElementById('sB').value;
-        const color = document.getElementById('bgColor').value;
-        const file = document.getElementById('bgImg');
-        if(file.files[0]) { session.bg = await toB64(file); } else { session.bg = color; }
-        save(); location.reload();
-    }
-
-    function loadTheme() {
-        if(db.alert) { const b = document.getElementById('announcement-bar'); b.innerText = db.alert; b.style.display = "block"; }
-        if(session && session.bg) {
-            const b = document.getElementById('site-body');
-            if(session.bg.startsWith('data:image')) { b.style.background = `url(${session.bg}) center center fixed`; b.style.backgroundSize = "cover"; }
-            else { b.style.background = session.bg; }
+        else if(page === 'admin') {
+            c.innerHTML = `<h1>Admin Master Panel</h1>
+            <div style="border:3px solid red; padding:20px; background:#FFF5F5;">
+                <h3>BC Code Generator (100 Years Validity)</h3>
+                <p>Current Active Code: <b style="font-size:20px; color:blue;">${db.bcCode}</b></p>
+                <button class="btn" onclick="generateBC()">Generate Random Code</button>
+                <hr>
+                <h3>Announcement Bar</h3>
+                <input id="alertMsg" placeholder="Text..." value="${db.alert}"><button class="btn" onclick="setAlert()">Update</button>
+                <hr>
+                <h3>Catalog</h3>
+                <input id="iN" placeholder="Name"><input id="iP" placeholder="Price"><br>Icon: <input type="file" id="iI"><br><button class="btn" onclick="addCatalog()">Add</button>
+                <hr>
+                <h3>User Control</h3>
+                <input id="mE" placeholder="Email"><input id="mA" placeholder="T$ Amount"><br>
+                <button class="btn" onclick="giveTickets()">Give T$</button><button class="btn btn-red" onclick="banUser()">Ban</button>
+            </div>`;
+        }
+        else if(page === 'settings') {
+            c.innerHTML = `<h1>Settings</h1>
+                <b>Builders Club:</b> ${session.bc ? '<span style="color:gold; font-weight:bold;">ACTIVE</span>' : '<input id="bcC" placeholder="Enter Code"><button class="btn" onclick="actBC()">Activate</button>'}
+                <hr>
+                <h3>Background</h3>
+                <input type="color" id="bgColor"> <input type="file" id="bgImg"><br><br>
+                <button class="btn" onclick="applySettings()">Save</button>`;
         }
     }
-
-    function logout() { localStorage.removeItem('nev_v18_sess'); location.reload(); }
-    async function addCatalog() { const img = await toB64(document.getElementById('iI')); db.catalog.push({name:document.getElementById('iN').value, price:parseInt(document.getElementById('iP').value), img:img, limited:document.getElementById('iL').checked}); save(); alert("Added!"); showPage('catalog'); }
-    async function addPlace() { const img = await toB64(document.getElementById('pI')); db.places.push({title:document.getElementById('pT').value, url:document.getElementById('pU').value, img:img, author:session.username}); save(); showPage('home'); }
-    function buy(idx) { const i = db.catalog[idx]; if(session.tix >= i.price) { session.tix -= i.price; session.inv.push({...i}); save(); location.reload(); } }
-    function actBC() { if(document.getElementById('bcC').value === BC_CODE) { session.bc=true; save(); location.reload(); } }
-    function addF() { session.friends.push(document.getElementById('fN').value); save(); showPage('friends'); }
-    function giveTickets() { let u = db.users.find(x => x.email === document.getElementById('mE').value); if(u) { u.tix += parseInt(document.getElementById('mA').value); save(); alert("Sent!"); } }
-    function banUser() { db.bans.push(document.getElementById('mE').value); save(); alert("Banned!"); }
-    function search() { const q = document.getElementById('search-bar').value.toLowerCase(); renderPlaces(db.places.filter(p => p.title.toLowerCase().includes(q))); }
-    function renderPlaces(l) { document.getElementById('content').innerHTML = `<h1>Games</h1>` + l.map(p => `<div class="card"><img src="${p.img}"><b>${p.title}</b><br><small>By ${p.author}</small><br><br><button class="btn" onclick="window.open('${p.url}')">Play</button></div>`).join(''); }
 
     if(session) {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('u-disp').innerHTML = session.username + (session.bc ? ' <span class="bc-badge">BC</span>' : '');
         document.getElementById('tix-disp').innerText = "T$ " + session.tix;
-        loadTheme();
-        if(session.role === 'admin' || session.email === ADMIN_EMAIL) {
-            const side = document.getElementById('sidebar');
-            const admBtn = document.createElement('a');
-            admBtn.innerHTML = "ADMIN PANEL"; admBtn.style.color = "red"; admBtn.style.border = "2px dashed red"; admBtn.style.marginTop = "20px";
-            admBtn.onclick = () => showPage('admin'); side.appendChild(admBtn);
-        }
-        showPage('home');
+        if(session.role === 'admin') { document.getElementById('sidebar').innerHTML += `<a onclick="showPage('admin')" style="color:red">ADMIN</a>`; }
+        if(session.bg) document.body.style.background = session.bg;
+        checkHourlyBonus(); setInterval(checkHourlyBonus, 60000);
     }
+
+    function generateBC() {
+        const newCode = "BC-" + Math.floor(1000 + Math.random() * 9000);
+        db.bcCode = newCode;
+        save();
+        alert("Generated! New code is: " + newCode);
+        showPage('admin');
+    }
+
+    function actBC() {
+        if(document.getElementById('bcC').value === db.bcCode) {
+            session.bc = true;
+            let u = db.users.find(x => x.email === session.email);
+            if(u) u.bc = true;
+            save(); alert("Builders Club Activated!"); location.reload();
+        } else { alert("Wrong Code!"); }
+    }
+
+    function setAlert() { db.alert = document.getElementById('alertMsg').value; save(); location.reload(); }
+    function clearAlert() { db.alert = ""; save(); location.reload(); }
+    if(db.alert) { let b = document.getElementById('announcement-bar'); b.innerText = db.alert; b.style.display = 'block'; }
+
+    async function addCatalog() {
+        const n = document.getElementById('iN').value, p = document.getElementById('iP').value, i = await toB64(document.getElementById('iI'));
+        db.catalog.push({ name: n, price: parseInt(p), img: i, id: Date.now() });
+        save(); alert("Added!");
+    }
+
+    async function addPlace() {
+        const t = document.getElementById('pT').value, u = document.getElementById('pU').value, i = await toB64(document.getElementById('pI'));
+        db.places.push({ title: t, url: u, img: i, author: session.username });
+        save(); showPage('home');
+    }
+
+    function buyItem(id) {
+        let item = db.catalog.find(x => x.id === id);
+        if(session.tix >= item.price) {
+            session.tix -= item.price; session.inv.push(item);
+            let u = db.users.find(x => x.email === session.email);
+            u.tix = session.tix; u.inv = session.inv;
+            save(); alert("Success!"); location.reload();
+        } else alert("No money!");
+    }
+
+    function giveTickets() {
+        let u = db.users.find(x => x.email === document.getElementById('mE').value);
+        if(u) { u.tix += parseInt(document.getElementById('mA').value); save(); alert("Done!"); }
+    }
+
+    function banUser() { db.bans.push(document.getElementById('mE').value); save(); alert("Banned!"); }
+
+    async function applySettings() {
+        const clr = document.getElementById('bgColor').value, img = await toB64(document.getElementById('bgImg'));
+        session.bg = img ? `url(${img})` : clr;
+        let u = db.users.find(x => x.email === session.email);
+        if(u) u.bg = session.bg;
+        save(); location.reload();
+    }
+
+    function search() {
+        let q = document.getElementById('search-bar').value.toLowerCase();
+        let cards = document.getElementsByClassName('card');
+        for(let c of cards) { c.style.display = c.innerText.toLowerCase().includes(q) ? 'inline-block' : 'none'; }
+    }
+
+    showPage('home');
 </script>
 </body>
 </html>
+
