@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nevitius - 2011 Master Legacy Gold</title>
+    <style>
+        body { background: #E1E1E1; font-family: Verdana, Arial; margin: 0; background-size: cover; background-attachment: fixed; }
+        header { background: #003399; color: white; padding: 0 20px; display: flex; align-items: center; border-bottom: 3px solid #002266; height: 55px; position: sticky; top: 0; z-index: 100; }
+        #announcement-bar { background: #FF4444; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 13px; display: none; border-bottom: 2px solid #880000; }
+        .search-container { flex-grow: 1; display: flex; justify-content: center; }
+        #search-bar { width: 400px; padding: 7px; border-radius: 3px; border: 1px solid #001a4d; outline: none; }
+        .container { width: 1300px; margin: 15px auto; background: rgba(255,255,255,0.98); border: 1px solid #999; display: flex; min-height: 900px; box-shadow: 0 0 30px rgba(0,0,0,0.4); }
+        .sidebar { width: 230px; border-right: 1px solid #CCC; padding: 15px; background: #F8F8F8; }
+        .sidebar a { display: block; padding: 12px; color: #333; text-decoration: none; border-bottom: 1px solid #EEE; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .sidebar a:hover { background: #EEE; color: #003399; padding-left: 20px; }
+        .main { flex-grow: 1; padding: 40px; }
+        
+        .btn { background: linear-gradient(#00FF00, #008800); color: white; border: 1px solid #006600; padding: 8px 15px; cursor: pointer; font-weight: bold; border-radius: 3px; }
+        .btn-red { background: linear-gradient(#FF4444, #CC0000); border: 1px solid #990000; }
+        .btn-blue { background: linear-gradient(#00AAFF, #0055FF); border: 1px solid #0044CC; }
+        .btn-gold { background: linear-gradient(#FFD700, #B8860B); color: black; border: 1px solid #8B4513; }
+        .btn:disabled { background: #CCC; border: 1px solid #999; cursor: not-allowed; color: #666; }
+
+        .card { display: inline-block; width: 215px; border: 1px solid #CCC; padding: 12px; margin: 10px; text-align: center; background: white; vertical-align: top; border-radius: 4px; position: relative; }
+        .card img { width: 100%; height: 180px; object-fit: cover; border: 1px solid #EEE; margin-bottom: 10px; }
+        .limited-tag { position: absolute; top: 5px; right: 5px; background: #000; color: #FFD700; padding: 2px 6px; font-size: 10px; font-weight: bold; border: 1px solid #FFD700; border-radius: 3px; box-shadow: 0 0 5px gold; }
+        
+        input, select, textarea { padding: 10px; margin: 8px 0; width: 90%; border: 1px solid #999; font-family: Verdana; border-radius: 3px; }
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #003399; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .bc-badge { background: #FFD700; color: #000; padding: 2px 6px; font-size: 11px; border-radius: 3px; margin-left: 8px; font-weight: bold; border: 1px solid #B8860B; }
+        .bc-panel { background: #FFF9E6; border: 2px solid #FFD700; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="announcement-bar"></div>
+
+<div id="auth-screen">
+    <div style="background:white; padding:45px; border:6px solid #002266; text-align:center; width:420px;">
+        <h1 style="font-size:55px; letter-spacing:-4px; margin:0 0 25px 0; color:black;">NEVITIUS</h1>
+        <input type="text" id="reg-u" placeholder="Username">
+        <input type="email" id="reg-e" placeholder="Email">
+        <input type="password" id="reg-p" placeholder="Password"><br><br>
+        <button class="btn" style="width:100%; font-size:20px; padding:15px;" onclick="auth()">LOG IN / JOIN</button>
+    </div>
+</div>
+
+<header>
+    <div style="font-size:28px; font-weight:bold; cursor:pointer;" onclick="showPage('home')">NEVITIUS</div>
+    <div class="search-container"><input type="text" id="search-bar" placeholder="Search Games or Users..." onkeyup="search()"></div>
+    <div id="u-disp" style="font-weight:bold; font-size:14px; margin-right:15px;"></div>
+    <div style="color:#FFD700; font-weight:bold; font-size:18px;" id="tix-disp">T$ 0</div>
+</header>
+
+<div class="container">
+    <div class="sidebar" id="sidebar">
+        <a onclick="showPage('home')">Games</a>
+        <a onclick="showPage('catalog')">Catalog</a>
+        <a onclick="showPage('creations')">Creations</a>
+        <a onclick="showPage('friends')">Friends</a>
+        <a onclick="showPage('inventory')">Inventory</a>
+        <a onclick="showPage('settings')">Settings</a>
+    </div>
+    <div class="main" id="content"></div>
+</div>
+
+<script>
+    const ADMIN_EMAIL = "T.vivdenko@outlook.com";
+
+    let db = JSON.parse(localStorage.getItem('nev_v22_db')) || { 
+        users: [], catalog: [], places: [], bans: [], alert: "", bcCode: "BC-OFFICIAL-2026" 
+    };
+    let session = JSON.parse(localStorage.getItem('nev_v22_sess'));
+
+    function save() { 
+        localStorage.setItem('nev_v22_db', JSON.stringify(db)); 
+        localStorage.setItem('nev_v22_sess', JSON.stringify(session)); 
+    }
+
+    function checkBonuses() {
+        if (!session) return;
+        const now = Date.now();
+        if (!session.lastHourly) session.lastHourly = now;
+        let diffHourly = now - session.lastHourly;
+        if (diffHourly >= 3600000) {
+            let hours = Math.floor(diffHourly / 3600000);
+            session.tix += hours * 5;
+            session.lastHourly = now;
+            updateUser();
+            alert(`Passive Income: +${hours * 5} T$ added to your balance!`);
+        }
+        document.getElementById('tix-disp').innerText = "T$ " + session.tix;
+    }
+
+    function updateUser() {
+        let u = db.users.find(x => x.email === session.email);
+        if(u) {
+            u.tix = session.tix;
+            u.lastHourly = session.lastHourly;
+            u.lastBCReward = session.lastBCReward;
+            u.bc = session.bc;
+            u.inv = session.inv;
+        }
+        save();
+    }
+
+    function auth() {
+        const u = document.getElementById('reg-u').value, e = document.getElementById('reg-e').value, p = document.getElementById('reg-p').value;
+        if(!u || !e || !p) return alert("Fill all fields!");
+        let user = db.users.find(x => x.email === e);
+        if(user) {
+            if(user.password !== p) return alert("Wrong password!");
+            session = user;
+        } else {
+            session = { 
+                username: u, email: e, password: p, tix: 150, 
+                inv: [], friends: [], bc: false, 
+                role: (e === ADMIN_EMAIL ? 'admin' : 'user'), 
+                bg: "", lastHourly: Date.now(), lastBCReward: 0 
+            };
+            db.users.push(session);
+        }
+        save(); location.reload();
+    }
+
+    async function toB64(input) { 
+        if(!input || !input.files[0]) return "";
+        return new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(input.files[0]); }); 
+    }
+
+    function showPage(page) {
+        const c = document.getElementById('content');
+        
+        if(page === 'home') {
+            c.innerHTML = `<h1>Games</h1><div style="display:flex; flex-wrap:wrap;">` + 
+            (db.places.length ? db.places.map(p => `<div class="card"><img src="${p.img}"><b>${p.title}</b><br><small>By ${p.author}</small><br><br><button class="btn" onclick="window.open('${p.url}')">Play</button></div>`).join('') : "<p>No games published yet.</p>") + `</div>`;
+        }
+        
+        else if(page === 'catalog') {
+            c.innerHTML = `<h1>Catalog</h1><div style="display:flex; flex-wrap:wrap;">` + 
+            (db.catalog.length ? db.catalog.map(i => `
+                <div class="card">
+                    ${i.type === 'limited' ? '<div class="limited-tag">LIMITED</div>' : ''}
+                    <img src="${i.img}"><b>${i.name}</b><br>
+                    <span style="color:green; font-weight:bold;">${i.price} T$</span><br><br>
+                    <button class="btn" onclick="buyItem(${i.id})">Buy</button>
+                </div>`).join('') : "<p>The marketplace is empty.</p>") + `</div>`;
+        }
+
+        else if(page === 'creations') {
+            c.innerHTML = `<h1>Creations</h1>
+            <div style="background:#f4f4f4; padding:25px; border:1px solid #ccc; max-width:500px;">
+                <h3>Publish New Game</h3>
+                <label>Title:</label><br><input id="pT" placeholder="My Awesome Map"><br>
+                <label>Game URL:</label><br><input id="pU" placeholder="https://..."><br>
+                <label>Icon:</label><br><input type="file" id="pI"><br><br>
+                <button class="btn btn-blue" onclick="addPlace()">PUBLISH GAME</button>
+            </div>`;
+        }
+
+        else if(page === 'friends') {
+            c.innerHTML = `<h1>Friends</h1><p>Friend system active. Use Search to find users.</p>`;
+        }
+
+        else if(page === 'inventory') {
+            c.innerHTML = `<h1>Inventory</h1>` + (session.inv.length ? session.inv.map(i => `<div class="card"><img src="${i.img}"><b>${i.name}</b></div>`).join('') : "<p>Your inventory is empty.</p>");
+        }
+
+        else if(page === 'settings') {
+            let nextBC = session.lastBCReward ? (30 * 3600000) - (Date.now() - session.lastBCReward) : 0;
+            let canClaim = nextBC <= 0;
+            let timeStr = nextBC > 0 ? Math.ceil(nextBC / 3600000) + "h remaining" : "READY!";
+
+            c.innerHTML = `<h1>Settings</h1>
+                <div style="margin-bottom:20px;">
+                    <b>Builders Club:</b> ${session.bc ? '<span style="color:gold; font-weight:bold;">PREMIUM ACTIVE</span>' : '<input id="bcC" placeholder="Enter Code" style="width:150px"> <button class="btn" onclick="actBC()">Activate</button>'}
+                </div>
+
+                ${session.bc ? `
+                <div class="bc-panel">
+                    <h2 style="margin-top:0; color:#B8860B;">✨ BC EXCLUSIVE PANEL</h2>
+                    <p>Claim your loyalty reward every 30 hours.</p>
+                    <button class="btn btn-gold" id="bcClaimBtn" ${!canClaim ? 'disabled' : ''} onclick="claimBCReward()">
+                        ${canClaim ? 'CLAIM 90 TIX' : 'COOLDOWN: ' + timeStr}
+                    </button>
+                </div>` : ''}
+
+                <hr><h3>Profile Customization</h3>
+                Theme Color: <input type="color" id="bgColor"><br>
+                Profile Wallpaper: <input type="file" id="bgImg"><br><br>
+                <button class="btn" onclick="applySettings()">SAVE SETTINGS</button>
+                <button class="btn btn-red" onclick="localStorage.clear(); location.reload();" style="float:right;">LOGOUT</button>`;
+        }
+
+        else if(page === 'admin') {
+            if(session.role !== 'admin') return;
+            c.innerHTML = `<h1>Admin Master Panel</h1>
+            <div style="border:3px solid red; padding:20px; background:white;">
+                <h3>Active BC Code: <span style="color:blue;">${db.bcCode}</span></h3>
+                <button class="btn btn-blue" onclick="genBC()">Generate New Code</button>
+                <hr>
+                <h3>Official Marketplace Creator</h3>
+                <input id="iN" placeholder="Item Name"><br>
+                <input id="iP" type="number" placeholder="Price (Tix)"><br>
+                Item Type: <select id="iType"><option value="normal">Normal</option><option value="limited">LIMITED EDITION</option></select><br>
+                Texture File: <input type="file" id="iI"><br>
+                <button class="btn" onclick="admPub()">PUBLISH OFFICIAL ITEM</button>
+                <hr>
+                <h3>Global Announcement</h3>
+                <input id="alertMsg" value="${db.alert}"><button class="btn" onclick="setA()">UPDATE SYSTEM ALERT</button>
+            </div>`;
+        }
+    }
+
+    function claimBCReward() {
+        if(!session.bc) return;
+        session.tix += 90; session.lastBCReward = Date.now();
+        updateUser(); alert("Success! +90 T$ added to your account."); showPage('settings');
+    }
+
+    function actBC() {
+        if(document.getElementById('bcC').value === db.bcCode) {
+            session.bc = true; updateUser(); alert("Builders Club Activated!"); location.reload();
+        } else alert("Invalid activation code!");
+    }
+
+    function genBC() {
+        db.bcCode = "BC-" + Math.floor(Math.random()*999999); save(); showPage('admin');
+    }
+
+    async function admPub() {
+        const n = document.getElementById('iN').value, p = document.getElementById('iP').value, 
+              t = document.getElementById('iType').value, i = await toB64(document.getElementById('iI'));
+        if(!n || !i) return alert("Error: Missing Name or Texture!");
+        db.catalog.push({ name: n, price: parseInt(p)||0, img: i, type: t, id: Date.now() });
+        save(); alert("Published to Marketplace!");
+    }
+
+    async function addPlace() {
+        const t = document.getElementById('pT').value, u = document.getElementById('pU').value, i = await toB64(document.getElementById('pI'));
+        if(!t || !i) return alert("Title and Icon are required!");
+        db.places.push({ title: t, url: u, img: i, author: session.username });
+        save(); showPage('home');
+    }
+
+    function buyItem(id) {
+        let itm = db.catalog.find(x => x.id === id);
+        if(session.tix < itm.price) return alert("Insufficient Tickets!");
+        if(session.inv.some(x => x.id === id)) return alert("Item already owned!");
+        session.tix -= itm.price; session.inv.push(itm);
+        updateUser(); alert("Purchase successful!"); location.reload();
+    }
+
+    function setA() { db.alert = document.getElementById('alertMsg').value; save(); location.reload(); }
+
+    async function applySettings() {
+        const clr = document.getElementById('bgColor').value, img = await toB64(document.getElementById('bgImg'));
+        session.bg = img ? `url(${img})` : clr;
+        updateUser(); location.reload();
+    }
+
+    function search() {
+        let q = document.getElementById('search-bar').value.toLowerCase();
+        let cards = document.getElementsByClassName('card');
+        for(let c of cards) { c.style.display = c.innerText.toLowerCase().includes(q) ? 'inline-block' : 'none'; }
+    }
+
+    if(session) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('u-disp').innerHTML = session.username + (session.bc ? ' <span class="bc-badge">BC</span>' : '');
+        checkBonuses(); setInterval(checkBonuses, 60000);
+        if(session.role === 'admin') document.getElementById('sidebar').innerHTML += `<a onclick="showPage('admin')" style="color:red; border-top:2px dotted red;">ADMIN PANEL</a>`;
+        if(session.bg) {
+            if(session.bg.startsWith('url')) { document.body.style.backgroundImage = session.bg; document.body.style.backgroundSize = "cover"; }
+            else document.body.style.backgroundColor = session.bg;
+        }
+        if(db.alert) { let b = document.getElementById('announcement-bar'); b.innerText = db.alert; b.style.display = 'block'; }
+        showPage('home');
+    }
+</script>
+</body>
+</html>
+
