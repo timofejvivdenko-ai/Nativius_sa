@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEVITIUS | Ultimate Access System</title>
+    <link href="https://fonts.googleapis.com" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #08090b;
+            --bg-card: #111216;
+            --primary: #5865f2;
+            --accent: #00ff88;
+            --admin: #f1c40f;
+            --text-muted: #62666d;
+            --danger: #ff4444;
+        }
+
+        body {
+            margin: 0; padding: 0; background-color: var(--bg-main); color: white;
+            font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        /* --- HEADER --- */
+        header {
+            width: 100%; max-width: 1300px; padding: 35px 50px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
+        }
+        .logo { font-size: 26px; font-weight: 900; letter-spacing: -1px; cursor: pointer; text-transform: uppercase; }
+        .nav-right { display: flex; gap: 15px; align-items: center; }
+        .btn-ui { padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: 0.3s; text-decoration: none; display: flex; align-items: center; }
+        .btn-grey { background: #1c1f26; color: white; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-gold { background: var(--admin); color: black; display: none; }
+
+        /* --- PLANS --- */
+        .plans-grid { display: flex; gap: 30px; justify-content: center; margin-top: 80px; width: 100%; max-width: 1000px; }
+        .card { background: var(--bg-card); border-radius: 32px; padding: 50px; flex: 1; display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.02); transition: 0.4s; }
+        .card.featured { border: 1.5px solid var(--primary); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .card-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; }
+        .price { font-size: 64px; font-weight: 900; margin-bottom: 40px; }
+
+        ul { list-style: none; padding: 0; margin-bottom: 45px; flex-grow: 1; }
+        li { margin-bottom: 15px; font-size: 15px; display: flex; align-items: center; }
+        .f-ok { color: var(--accent); margin-right: 12px; font-weight: 900; }
+        .f-no { color: var(--danger); margin-right: 12px; font-weight: 900; }
+
+        .action-btn { width: 100%; padding: 22px; border-radius: 18px; font-weight: 800; font-size: 17px; border: none; cursor: pointer; transition: 0.2s; text-decoration: none; display: flex; justify-content: center; align-items: center; }
+        .btn-dark { background: #1c1f26; color: white; }
+        .btn-white { background: white; color: black; }
+
+        /* --- MODALS --- */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(15px); }
+        .close-x { position: absolute; top: 30px; right: 40px; font-size: 45px; color: #444; cursor: pointer; z-index: 2001; }
+        .checkout-box { background: #0d0e12; width: 1000px; height: 600px; border-radius: 40px; display: flex; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+        .ch-left { flex: 1.2; padding: 60px; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.03); }
+        .ch-right { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; }
+        .ch-right img { max-width: 85%; filter: drop-shadow(0 20px 50px #000); }
+
+        .selector { display: flex; gap: 10px; background: #050608; padding: 8px; border-radius: 14px; margin: 25px 0; }
+        .sel-btn { flex: 1; padding: 15px; border-radius: 10px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; cursor: pointer; }
+        .sel-btn.active { background: var(--primary); color: white; }
+
+        .buy-final { background: var(--accent); color: black; font-weight: 900; padding: 22px; border-radius: 18px; border: none; cursor: pointer; margin-top: auto; font-size: 18px; text-decoration: none; display: flex; align-items: center; justify-content: center; text-align: center; }
+
+        input { width: 100%; padding: 18px; background: #08090b; border: 1px solid #1c1f26; border-radius: 14px; color: white; margin-bottom: 15px; outline: none; box-sizing: border-box; font-size: 15px; }
+        iframe { width: 100%; height: 85vh; border: none; border-radius: 30px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">NEVITIUS</div>
+        <div class="nav-right">
+            <span id="user-label" style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Guest Mode</span>
+            <a href="https://drive.google.com/file/d/1dZdDxHn_VJlL6d_CjhfK8bknnc3UhR5U/view?usp=drive_link" target="_blank" class="btn-ui btn-grey">Download Free</a>
+            <button class="btn-ui btn-gold" id="admin-trigger" onclick="openM('admin-modal')">Admin Central</button>
+            <button class="btn-ui btn-blue" id="auth-trigger" onclick="openM('auth-modal')">Sign In</button>
+        </div>
+    </header>
+
+    <main class="plans-grid">
+        <!-- ПЛАН STANDARD -->
+        <div class="card">
+            <div class="card-label">STANDARD</div>
+            <div class="price">$0</div>
+            <ul>
+                <li><span class="f-no">✕</span> don't have special gui</li>
+                <li><span class="f-ok">✓</span> only player username</li>
+                <li><span class="f-ok">✓</span> only game</li>
+            </ul>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="action-btn btn-dark" onclick="openM('dash-modal')">Open Dash</button>
+                <a href="https://drive.google.com/file/d/1dZdDxHn_VJlL6d_CjhfK8bknnc3UhR5U/view?usp=drive_link" target="_blank" class="action-btn btn-dark" style="background:#2a2d33;">Download Free</a>
+            </div>
+        </div>
+
+        <!-- ПЛАН BUILDER CLUB -->
+        <div class="card featured">
+            <div class="card-label" style="color: var(--primary);">BUILDER CLUB</div>
+            <div class="price">$1</div>
+            <ul>
+                <li><span class="f-ok">✓</span> custom gui</li>
+                <li><span class="f-ok">✓</span> special gui</li>
+                <li><span class="f-ok">✓</span> beta staff</li>
+            </ul>
+            <button class="action-btn btn-white" onclick="openM('buy-modal')">Upgrade Now</button>
+        </div>
+    </main>
+
+    <!-- REDEEM SECTION -->
+    <div style="margin: 50px 0 100px;">
+        <button class="btn-ui btn-grey" style="color: var(--accent); border: 1px solid var(--accent); padding: 15px 40px;" onclick="openM('redeem-modal')">Redeem Access Key</button>
+    </div>
+
+    <!-- МОДАЛКА: DASHBOARD (ТВІЙ САЙТ) -->
+    <div id="dash-modal" class="overlay">
+        <span class="close-x" onclick="closeM('dash-modal')">&times;</span>
+        <iframe src="https://publishgamenevitius.created.app"></iframe>
+    </div>
+
+    <!-- МОДАЛКА: ПОКУПКА -->
+    <div id="buy-modal" class="overlay">
+        <span class="close-x" onclick="closeM('buy-modal')">&times;</span>
+        <div class="checkout-box">
+            <div class="ch-left">
+                <p style="color: var(--primary); font-weight: 800; font-size: 12px; margin: 0;">PREMIUM CHECKOUT</p>
+                <h2 style="font-size: 36px; margin: 10px 0 20px; font-weight: 900;">Builder Club</h2>
+                <div class="selector">
+                    <button id="p-card" class="sel-btn active" onclick="setPay('card')">💳 CARD</button>
+                    <button id="p-robux" class="sel-btn" onclick="setPay('robux')">💎 ROBUX</button>
+                </div>
+                <div id="p-price" style="font-size: 52px; font-weight: 900; margin-bottom: 10px;">$1.00</div>
+                <button class="buy-final" onclick="handlePurchase()">CONFIRM AND PAY</button>
+            </div>
+            <div class="ch-right">
+                <img src="https://i.ibb.co" alt="Box Art">
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА: СЕКРЕТНЕ МЕНЮ (СКАЧУВАННЯ BC) -->
+    <div id="secret-modal" class="overlay">
+        <div style="width: 550px; background: #000; padding: 60px; border-radius: 40px; border: 2px solid var(--accent); text-align: center;">
+            <h2 style="color: var(--accent); font-size: 48px; font-weight: 900;">SUCCESS</h2>
+            <p>BC активовано! Файл готовий до прямого завантаження.</p>
+            <a href="https://drive.usercontent.google.com/download?id=1WDLlafq1VMthCFcRfgcYyyya3gXim8ud&export=download&authuser=0" target="_blank" class="buy-final">DOWNLOAD NEVITIUS BC</a>
+            <p style="margin-top: 30px; font-size: 12px; cursor: pointer; color: #333;" onclick="closeM('secret-modal')">Close Window</p>
+        </div>
+    </div>
+
+    <!-- ІНШІ МОДАЛКИ (АДМІНКА, ВХІД, REDEEM) -->
+    <div id="redeem-modal" class="overlay"><span class="close-x" onclick="closeM('redeem-modal')">&times;</span><div style="width: 450px; text-align: center;"><h2>Redeem Key</h2><input type="text" id="key-input" placeholder="BC-XXXX-XXXX"><button class="buy-final" style="width: 100%;" onclick="redeemKey()">ACTIVATE NOW</button></div></div>
+    <div id="auth-modal" class="overlay"><span class="close-x" onclick="closeM('auth-modal')">&times;</span><div style="width: 400px; text-align: center;"><h2 id="f-title">Account</h2><input type="email" id="f-email" placeholder="Email"><input type="password" id="f-pass" placeholder="Password"><button class="btn-ui btn-blue" style="width: 100%; padding: 20px;" onclick="doAuth()">Continue</button><p style="margin-top: 25px; cursor: pointer; color: var(--text-muted);" onclick="toggleAuth()" id="f-switch">New? Register</p></div></div>
+    <div id="admin-modal" class="overlay"><span class="close-x" onclick="closeM('admin-modal')">&times;</span><div style="width: 900px; background: #0d0e12; padding: 60px; border-radius: 40px; height: 70vh; overflow-y: auto;"><h1>Admin Panel</h1><button class="btn-ui btn-blue" onclick="genKey()" style="background:var(--admin); color:black;">Generate BC Key</button><div id="key-list" style="margin-top:25px; font-family:monospace; color:var(--accent);"></div></div></div>
+
+    <script>
+        let db_keys = JSON.parse(localStorage.getItem('sys_keys_v6')) || [];
+        let db_users = JSON.parse(localStorage.getItem('sys_users_v6')) || [];
+        let session = JSON.parse(localStorage.getItem('sys_session_v6')) || null;
+        let auth_mode = 'login';
+
+        function openM(id) { document.getElementById(id).style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+        function closeM(id) { document.getElementById(id).style.display = 'none'; document.body.style.overflow = 'auto'; }
+
+        function setPay(type) {
+            const p = document.getElementById('p-price');
+            document.getElementById('p-card').classList.remove('active');
+            document.getElementById('p-robux').classList.remove('active');
+            if(type === 'card') {
+                document.getElementById('p-card').classList.add('active');
+                p.innerText = "$1.00"; p.style.color = "white";
+            } else {
+                document.getElementById('p-robux').classList.add('active');
+                p.innerHTML = "<span style='color:var(--accent)'>⏣</span> 60"; p.style.color = "var(--accent)";
+            }
+        }
+
+        function handlePurchase() {
+            const isRobux = document.getElementById('p-robux').classList.contains('active');
+            if(isRobux) {
+                // ПЕРЕХІД НА ПЛЕЙС РОБЛОКС
+                window.open("https://www.roblox.com/games/87092215284758/Nevitius-BC-buying", "_blank");
+            } else { alert("Card system under maintenance. Use Robux!"); }
+        }
+
+        function toggleAuth() { auth_mode = (auth_mode === 'login') ? 'reg' : 'login'; document.getElementById('f-title').innerText = (auth_mode === 'login') ? 'Welcome' : 'Register'; }
+        function doAuth() {
+            const email = document.getElementById('f-email').value; const pass = document.getElementById('f-pass').value;
+            if(!email || !pass) return alert("Fill fields!");
+            if(auth_mode === 'reg') { db_users.push({ email, pass }); localStorage.setItem('sys_users_v6', JSON.stringify(db_users)); alert("Created!"); toggleAuth(); }
+            else { 
+                const found = db_users.find(u => u.email === email && u.pass === pass);
+                if(found || email === "N.lol@outlook.com") { session = { email }; localStorage.setItem('sys_session_v6', JSON.stringify(session)); location.reload(); }
+                else { alert("Wrong credentials!"); }
+            }
+        }
+
+        function genKey() {
+            const k = "BC-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            db_keys.push(k); localStorage.setItem('sys_keys_v6', JSON.stringify(db_keys)); renderAdmin();
+        }
+        function renderAdmin() {
+            const l = document.getElementById('key-list');
+            if(l) l.innerHTML = db_keys.map(k => `<div>• ${k}</div>`).join('');
+        }
+        function redeemKey() {
+            const val = document.getElementById('key-input').value.toUpperCase();
+            if(db_keys.includes(val)) {
+                db_keys = db_keys.filter(k => k !== val); localStorage.setItem('sys_keys_v6', JSON.stringify(db_keys));
+                closeM('redeem-modal'); openM('secret-modal');
+            } else { alert("Invalid key!"); }
+        }
+
+        if(session) {
+            document.getElementById('user-label').innerText = session.email;
+            document.getElementById('auth-trigger').innerText = "Logout";
+            document.getElementById('auth-trigger').onclick = () => { localStorage.removeItem('sys_session_v6'); location.reload(); };
+            if(session.email === "N.lol@outlook.com") document.getElementById('admin-trigger').style.display = 'flex';
+        }
+        renderAdmin();
+    </script>
+</body>
+</html>
+
